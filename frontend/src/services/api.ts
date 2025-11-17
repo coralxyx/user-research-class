@@ -53,8 +53,22 @@ export const getPosts = async () => {
  * 获取单个帖子详情
  */
 export const getPost = async (id: number) => {
-  const response = await api.get(`/posts/${id}`)
-  return response.data
+  try {
+    const response = await api.get(`/posts/${id}`)
+    if (response.data && response.status === 200) {
+      return response.data
+    }
+    throw new Error('帖子数据格式错误')
+  } catch (error: any) {
+    if (error.response) {
+      // API 返回了错误响应
+      if (error.response.status === 404) {
+        throw new Error('帖子不存在')
+      }
+      throw new Error(error.response.data?.error || '获取帖子失败')
+    }
+    throw error
+  }
 }
 
 /**

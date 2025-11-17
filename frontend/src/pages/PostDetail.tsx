@@ -32,10 +32,22 @@ function PostDetail() {
    */
   const loadPost = async (postId: number) => {
     try {
+      setLoading(true)
       const data = await getPost(postId)
-      setPost(data)
+      // 确保数据格式正确，添加默认值
+      if (data) {
+        setPost({
+          ...data,
+          images: data.images || [],
+          tags: data.tags || [],
+          content: data.content || ''
+        })
+      } else {
+        setPost(null)
+      }
     } catch (error) {
       console.error('Failed to load post:', error)
+      setPost(null)
     } finally {
       setLoading(false)
     }
@@ -66,7 +78,19 @@ function PostDetail() {
   }
 
   if (!post) {
-    return <div className="error">帖子不存在</div>
+    return (
+      <div className="post-detail">
+        <header className="detail-header">
+          <button onClick={() => navigate('/')} className="back-btn">← 返回</button>
+          <h1>帖子详情</h1>
+          <div></div>
+        </header>
+        <div className="error-container">
+          <div className="error">帖子不存在或加载失败</div>
+          <button onClick={() => navigate('/')} className="back-home-btn">返回首页</button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -79,16 +103,20 @@ function PostDetail() {
       <div className="detail-container">
         <div className="detail-content">
           <div className="detail-images">
-            {post.images.map((image, index) => (
-              <img 
-                key={index}
-                src={image} 
-                alt={`${post.title} - ${index + 1}`}
-                onError={(e) => {
-                  e.currentTarget.src = `https://via.placeholder.com/600x800?text=${encodeURIComponent(post.title)}`
-                }}
-              />
-            ))}
+            {post.images && post.images.length > 0 ? (
+              post.images.map((image, index) => (
+                <img 
+                  key={index}
+                  src={image} 
+                  alt={`${post.title} - ${index + 1}`}
+                  onError={(e) => {
+                    e.currentTarget.src = `https://via.placeholder.com/600x800?text=${encodeURIComponent(post.title)}`
+                  }}
+                />
+              ))
+            ) : (
+              <div className="no-image">暂无图片</div>
+            )}
           </div>
           <div className="detail-info">
             <h2 className="detail-title">{post.title}</h2>
@@ -106,14 +134,22 @@ function PostDetail() {
               </div>
             </div>
             <div className="detail-text">
-              {post.content.split('\n').map((paragraph, index) => (
-                <p key={index}>{paragraph}</p>
-              ))}
+              {post.content ? (
+                post.content.split('\n').map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))
+              ) : (
+                <p>暂无内容</p>
+              )}
             </div>
             <div className="detail-tags">
-              {post.tags.map(tag => (
-                <span key={tag} className="tag-large">#{tag}</span>
-              ))}
+              {post.tags && post.tags.length > 0 ? (
+                post.tags.map(tag => (
+                  <span key={tag} className="tag-large">#{tag}</span>
+                ))
+              ) : (
+                <span className="tag-large">#无标签</span>
+              )}
             </div>
             <div className="detail-actions">
               <button className="action-btn like-btn" onClick={handleLike}>
