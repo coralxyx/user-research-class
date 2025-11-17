@@ -1,128 +1,248 @@
 # Vercel 部署配置指南
 
-## ✅ 部署状态
+## 🎉 完整部署方案
 
-前端已成功部署到 Vercel！
-
-**部署地址：**
-- 生产环境：https://frontend-n3x8wxub1-coralxyxs-projects.vercel.app
-- 项目设置：https://vercel.com/coralxyxs-projects/frontend/settings
+现在前端和后端都可以部署到 Vercel 了！后端已转换为 Vercel Serverless Functions。
 
 ---
 
-## 🔧 必须配置的步骤
+## 🚀 快速部署步骤
 
-### 1. 配置环境变量
+### 方法1：通过 Vercel CLI（推荐）
 
-前端需要知道后端API的地址。请按以下步骤配置：
+1. **安装 Vercel CLI**（如果还没安装）：
+   ```bash
+   npm i -g vercel
+   ```
 
-1. **访问项目设置页面：**
-   https://vercel.com/coralxyxs-projects/frontend/settings/environment-variables
+2. **登录 Vercel**：
+   ```bash
+   vercel login
+   ```
 
-2. **添加环境变量：**
-   - **Key（变量名）**：`VITE_API_URL`
-   - **Value（变量值）**：你的后端API地址
-     - 如果后端还没部署，可以先设置为：`http://localhost:3001/api`（仅用于测试）
-     - 如果后端已部署，设置为：`https://your-backend-domain.com/api`
-   - **Environment（环境）**：选择 `Production`、`Preview` 和 `Development`（全选）
+3. **在项目根目录部署**：
+   ```bash
+   vercel
+   ```
+   
+   首次部署会提示：
+   - 是否链接到现有项目？选择 `N`（创建新项目）
+   - 项目名称：输入你的项目名称
+   - 目录：直接回车（使用当前目录）
+   - 覆盖设置：直接回车（使用默认配置）
 
-3. **保存后重新部署：**
-   - 在 Vercel 控制台点击 "Redeploy" 按钮
-   - 或者运行命令：`cd frontend && vercel --prod`
+4. **部署到生产环境**：
+   ```bash
+   vercel --prod
+   ```
 
----
+### 方法2：通过 GitHub 集成（推荐用于持续部署）
 
-## 🚀 后端部署（如果还没部署）
+1. **将代码推送到 GitHub**：
+   ```bash
+   git add .
+   git commit -m "准备部署到 Vercel"
+   git push origin main
+   ```
 
-前端需要后端API才能正常工作。你可以选择以下方式部署后端：
-
-### 选项1：Railway（推荐，简单）
-
-1. 访问 https://railway.app
-2. 使用 GitHub 登录
-3. 创建新项目 → 从 GitHub 仓库部署
-4. 选择 `backend` 目录
-5. 设置启动命令：`node server.js`
-6. 配置端口：Railway 会自动分配，在代码中使用 `process.env.PORT || 3001`
-7. 获取部署后的URL，例如：`https://your-app.railway.app`
-8. 在 Vercel 中设置 `VITE_API_URL` 为：`https://your-app.railway.app/api`
-
-### 选项2：Render
-
-1. 访问 https://render.com
-2. 创建新的 Web Service
-3. 连接 GitHub 仓库
-4. 设置：
-   - Build Command: `cd backend && npm install`
-   - Start Command: `cd backend && node server.js`
-5. 获取部署URL并配置环境变量
-
-### 选项3：自己的服务器
-
-如果你有自己的服务器，可以：
-1. 使用 PM2 运行后端：`pm2 start backend/server.js`
-2. 配置 Nginx 反向代理
-3. 设置 `VITE_API_URL` 指向你的服务器地址
+2. **在 Vercel 网站部署**：
+   - 访问 https://vercel.com
+   - 点击 "Add New Project"
+   - 导入你的 GitHub 仓库
+   - Vercel 会自动检测配置（`vercel.json`）
+   - 点击 "Deploy"
 
 ---
 
-## 📝 更新后端代码以支持生产环境
+## 📁 项目结构
 
-如果使用 Railway/Render 等平台，需要修改后端代码以支持动态端口：
-
-```javascript
-// 在 backend/server.js 中
-const PORT = process.env.PORT || 3001
+部署后的项目结构：
+```
+/
+├── api/                    # Serverless Functions
+│   ├── posts.js           # GET /api/posts
+│   ├── posts/
+│   │   └── [id].js        # GET /api/posts/:id
+│   ├── track.js           # POST /api/track
+│   ├── data.js            # GET /api/data
+│   └── utils/
+│       └── data.js        # 数据工具函数
+├── frontend/              # 前端代码
+│   ├── src/
+│   └── dist/              # 构建输出
+├── backend/
+│   └── data/              # 数据文件（posts.json, actions.json）
+├── vercel.json            # Vercel 配置
+└── package.json
 ```
 
 ---
 
-## 🔄 重新部署
+## ⚙️ 配置说明
 
-如果修改了环境变量或代码，需要重新部署：
+### vercel.json 配置
 
-```bash
-cd frontend
-vercel --prod
+```json
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
 ```
+
+- **buildCommand**: 构建前端项目
+- **outputDirectory**: 前端构建输出目录
+- **rewrites**: SPA 路由重写规则
+
+### API 路由
+
+所有 API 路由都在 `api/` 目录下：
+- `/api/posts` → `api/posts.js`
+- `/api/posts/:id` → `api/posts/[id].js`
+- `/api/track` → `api/track.js`
+- `/api/data` → `api/data.js`
+
+---
+
+## 📝 数据存储说明
+
+### 读取数据
+- 优先从 `backend/data/` 目录读取初始数据
+- 如果 `/tmp/` 目录有数据，也会读取（用于合并）
+
+### 写入数据
+- 所有写入操作都保存到 `/tmp/` 目录
+- ⚠️ **注意**：Vercel Serverless Functions 是无状态的，`/tmp/` 目录的数据在函数执行结束后可能会被清除
+- 如果需要持久化存储，建议使用：
+  - Vercel KV（Redis）
+  - Vercel Postgres
+  - 或其他外部数据库
+
+---
+
+## 🔧 环境变量（可选）
+
+如果前端需要自定义 API 地址，可以设置：
+
+1. **在 Vercel 项目设置中添加环境变量**：
+   - Key: `VITE_API_URL`
+   - Value: `/api`（默认值，使用相对路径）
+   - Environment: Production, Preview, Development
+
+2. **如果使用外部 API**：
+   - Value: `https://your-api-domain.com/api`
 
 ---
 
 ## ✅ 验证部署
 
-1. 访问前端地址：https://frontend-n3x8wxub1-coralxyxs-projects.vercel.app
-2. 检查浏览器控制台是否有API连接错误
-3. 尝试点击帖子、点赞、收藏，看是否能正常记录数据
+部署完成后：
+
+1. **访问你的 Vercel 部署地址**（例如：`https://your-project.vercel.app`）
+
+2. **测试功能**：
+   - ✅ 查看帖子列表
+   - ✅ 点击帖子查看详情
+   - ✅ 点赞、收藏帖子
+   - ✅ 查看数据统计页面
+
+3. **检查 API**：
+   - 访问 `https://your-project.vercel.app/api/posts` 应该返回帖子列表
+   - 访问 `https://your-project.vercel.app/api/data` 应该返回用户行为数据
+
+---
+
+## 🔄 更新部署
+
+### 通过 CLI
+```bash
+vercel --prod
+```
+
+### 通过 GitHub
+- 推送代码到 GitHub
+- Vercel 会自动触发重新部署
 
 ---
 
 ## 🆘 常见问题
 
-### 问题1：API请求失败（CORS错误）
+### 问题1：API 返回 404
 
-**解决方案：** 确保后端允许前端域名的跨域请求。在 `backend/server.js` 中：
+**解决方案**：
+- 检查 `api/` 目录下的文件是否正确
+- 确保文件导出默认函数：`export default async function handler(req, res)`
+- 检查 Vercel 部署日志
 
-```javascript
-app.use(cors({
-  origin: ['https://frontend-n3x8wxub1-coralxyxs-projects.vercel.app', 'http://localhost:3000']
-}))
-```
+### 问题2：数据写入后丢失
 
-### 问题2：环境变量不生效
+**原因**：Vercel Serverless Functions 是无状态的，`/tmp/` 目录数据不会持久化。
 
-**解决方案：**
-1. 确保环境变量名称是 `VITE_API_URL`（必须以 `VITE_` 开头）
-2. 重新部署项目
-3. 清除浏览器缓存
+**解决方案**：
+- 使用 Vercel KV 或 Postgres 进行持久化存储
+- 或使用外部数据库服务
 
-### 问题3：路由404错误
+### 问题3：CORS 错误
 
-**解决方案：** Vercel 会自动处理 SPA 路由，如果还有问题，检查 `vercel.json` 配置
+**解决方案**：所有 API 函数都已设置 CORS 头，允许所有来源。如果还有问题，检查浏览器控制台错误信息。
+
+### 问题4：构建失败
+
+**解决方案**：
+- 检查 `frontend/package.json` 中的构建脚本
+- 确保所有依赖都已安装
+- 查看 Vercel 构建日志
+
+### 问题5：路由404（前端路由）
+
+**解决方案**：`vercel.json` 中的 `rewrites` 配置应该已经处理了 SPA 路由。如果还有问题，检查配置是否正确。
+
+---
+
+## 📊 监控和日志
+
+- **部署日志**：在 Vercel 项目页面查看
+- **函数日志**：在 Vercel 项目 → Functions 页面查看
+- **实时日志**：使用 `vercel logs` 命令
+
+---
+
+## 🔐 安全建议
+
+1. **API 限流**：考虑添加 API 限流保护
+2. **数据验证**：确保所有输入都经过验证
+3. **错误处理**：不要在生产环境暴露敏感错误信息
 
 ---
 
 ## 📞 需要帮助？
 
 - Vercel 文档：https://vercel.com/docs
-- 项目设置：https://vercel.com/coralxyxs-projects/frontend/settings
+- Serverless Functions：https://vercel.com/docs/functions
+- 项目设置：在 Vercel 控制台查看
 
+---
+
+## 🎯 下一步
+
+如果需要持久化存储，可以考虑：
+
+1. **使用 Vercel KV**（Redis）：
+   ```bash
+   vercel kv create
+   ```
+
+2. **使用 Vercel Postgres**：
+   ```bash
+   vercel postgres create
+   ```
+
+3. **迁移数据到数据库**：
+   - 修改 `api/utils/data.js` 使用数据库而不是文件系统
+   - 更新所有 API 函数以使用新的数据存储方式
